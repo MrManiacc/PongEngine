@@ -15,4 +15,4 @@
 /**
  * We can also define and use indvidual variables
  */
-#define VERSION-> ##verions 400 core
+#define VERSION-> "#version 400 core"

@@ -23,5 +23,15 @@ public class Shader extends Asset<ShaderData> {
      */
     public void reload(ShaderData data) {
 //        System.out.println(data.getVertexSource() + " : " + data.getFragmentSource());
+        System.out.println("--------------");
+
+        for (var vertex : data.getVertexSource()) {
+            System.out.println(vertex);
+        }
+        System.out.println("--------------");
+        for (var frag : data.getFragmentSource()) {
+            System.out.println(frag);
+        }
+        System.out.println("--------------");
     }
 }

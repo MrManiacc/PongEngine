@@ -1,7 +1,8 @@
-#define engine:utils-> BINDS, UNIFORMS
 
 #ifdef VERTEX_SHADER
     #define engine:utils-> VERSION
+    #define engine:utils-> BINDS
+    #define engine:utils-> UNIFORMS
     void main(){
         //Automatically passed
         vec4 mvp = projectionMatrix * viewMatrix * modelMatrix;
@@ -13,6 +14,8 @@
 
 #ifdef FRAGMENT_SHADER
     #define engine:utils-> VERSION
+    #define engine:utils-> UNIFORMS
+
     void main(){
         //Out color is always automatically generated, unless specified otherwise from java pre-processor
         out_Color = texture(diffuse, pass_textCoord);

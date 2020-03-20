@@ -1,5 +1,6 @@
 package io.chunkworld.client.engine.assets.shader;
 
+import com.google.common.collect.Lists;
 import io.chunkworld.api.core.assets.files.AbstractAssetFileFormat;
 import io.chunkworld.api.core.assets.files.AssetDataFile;
 import io.chunkworld.api.core.assets.urn.ResourceUrn;
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -35,8 +37,8 @@ public class ShaderFormat extends AbstractAssetFileFormat<ShaderData> {
         var stream = input.openStream();
         var lines = Files.readAllLines(input.getPath());
         stream.close();
-//        return buildShader(lines);
-        return ShaderParser.parseShader(urn, lines);
+        var data = buildShader(lines);
+        return ShaderParser.parseShader(data, urn);
     }
 
     /**
@@ -46,15 +48,18 @@ public class ShaderFormat extends AbstractAssetFileFormat<ShaderData> {
      * @return returns the shader data
      */
     private ShaderData buildShader(List<String> lines) {
-        var vertexBuilder = new StringBuilder();
-        var fragBuilder = new StringBuilder();
-        var shaderLines = parseShaderLines(lines);
-        for (int i = shaderLines[0]; i < shaderLines[1]; i++) {
-            vertexBuilder.append(lines.get(i).trim()).append("\n");
-        }
-        for (int i = shaderLines[2]; i < shaderLines[3]; i++)
-            fragBuilder.append(lines.get(i).trim()).append("\n");
-        return new ShaderData(vertexBuilder.toString(), fragBuilder.toString());
+        var customLinesList = new ArrayList<String>();
+        var shaderLines = parseShaderLines(lines, customLinesList);
+        var vertexSource = new String[shaderLines[1] - shaderLines[0]];
+        var fragSource = new String[shaderLines[3] - shaderLines[2]];
+        var customLines = new String[customLinesList.size()];
+        for (int i = 0; i < customLinesList.size(); i++)
+            customLines[i] = customLinesList.get(i);
+        for (int i = shaderLines[0], j = 0; i < shaderLines[1]; i++, j++)
+            vertexSource[j] = lines.get(i).trim();
+        for (int i = shaderLines[2], j = 0; i < shaderLines[3]; i++, j++)
+            fragSource[j] = lines.get(i).trim();
+        return new ShaderData(vertexSource, fragSource, customLines);
     }
 
     /**
@@ -63,7 +68,7 @@ public class ShaderFormat extends AbstractAssetFileFormat<ShaderData> {
      * @param lines the shader source
      * @return returns the start and stop of both shaders
      */
-    private int[] parseShaderLines(List<String> lines) {
+    private int[] parseShaderLines(List<String> lines, List<String> customLines) {
         var shaderLines = new int[]{
                 -1, -1, -1, -1
         };
@@ -90,6 +95,10 @@ public class ShaderFormat extends AbstractAssetFileFormat<ShaderData> {
                     shaderLines[3] = i;
                     inFrag = false;
                 }
+            }
+
+            if (!inFrag && !inVertex) {
+                customLines.add(line);
             }
         }
         return shaderLines;
