@@ -35,6 +35,21 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
+            <version>0.9.10</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.6</version>
+        </dependency>
+        <dependency>
+            <groupId>net.onedaybeard.artemis</groupId>
+            <artifactId>artemis-odb</artifactId>
+            <version>2.2.0</version>
+        </dependency>
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>1.18.12</version>
@@ -54,6 +69,11 @@
             <groupId>org.joml</groupId>
             <artifactId>joml</artifactId>
             <version>1.9.22</version>
+        </dependency>
+        <dependency>
+            <groupId>com.googlecode.gentyref</groupId>
+            <artifactId>gentyref</artifactId>
+            <version>1.2.0</version>
         </dependency>
     </dependencies>
 

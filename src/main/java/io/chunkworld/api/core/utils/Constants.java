@@ -1,4 +1,4 @@
-package io.chunkworld.api.utilities;
+package io.chunkworld.api.core.utils;
 
 /**
  * This is a simple class that stores contstants like

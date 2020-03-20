@@ -1,4 +1,4 @@
-package io.chunkworld.api.utilities;
+package io.chunkworld.api.core.utils;
 
 /**
  * A generic direction represented by an enum

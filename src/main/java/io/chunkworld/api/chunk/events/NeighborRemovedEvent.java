@@ -1,7 +1,7 @@
 package io.chunkworld.api.chunk.events;
 
 import io.chunkworld.api.chunk.IChunk;
-import io.chunkworld.api.utilities.Direction;
+import io.chunkworld.api.core.utils.Direction;
 
 /**
  * Represents an event when a neighbor is added to a chunk

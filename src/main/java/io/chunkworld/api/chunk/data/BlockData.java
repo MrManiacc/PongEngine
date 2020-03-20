@@ -3,8 +3,8 @@ package io.chunkworld.api.chunk.data;
 import io.chunkworld.api.bus.Bus;
 import io.chunkworld.api.chunk.IChunk;
 import io.chunkworld.api.chunk.events.BlockUpdatedEvent;
-import io.chunkworld.api.utilities.Constants;
-import io.chunkworld.api.utilities.LocationUtils;
+import io.chunkworld.api.core.utils.Constants;
+import io.chunkworld.api.core.utils.LocationUtils;
 import lombok.Getter;
 import org.joml.Vector3i;
 

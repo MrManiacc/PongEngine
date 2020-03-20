@@ -7,7 +7,7 @@ import lombok.Getter;
  * represents the different types of event buses
  */
 public enum Bus {
-    Chunk(new EventBus("chunk")), Network(new EventBus("network")), Entity(new EventBus("entity"));
+    Logic(new EventBus("logic")), Chunk(new EventBus("chunk")), Network(new EventBus("network")), Entity(new EventBus("entity"));
     private EventBus bus;
 
     Bus(EventBus bus) {

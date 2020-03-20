@@ -6,11 +6,11 @@ import io.chunkworld.api.chunk.IChunk;
 import io.chunkworld.api.chunk.events.AllNeighborsAddedEvent;
 import io.chunkworld.api.chunk.events.NeighborAddedEvent;
 import io.chunkworld.api.chunk.events.NeighborRemovedEvent;
-import io.chunkworld.api.utilities.Direction;
+import io.chunkworld.api.core.utils.Direction;
 
 import java.util.Map;
 
-import static io.chunkworld.api.utilities.Constants.CHUNK_SIZE;
+import static io.chunkworld.api.core.utils.Constants.CHUNK_SIZE;
 
 /**
  * This class will store a reference to the chunk's neighbors, or null

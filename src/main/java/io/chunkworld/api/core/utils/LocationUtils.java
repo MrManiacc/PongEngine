@@ -1,9 +1,9 @@
-package io.chunkworld.api.utilities;
+package io.chunkworld.api.core.utils;
 
 import org.joml.Vector3i;
 
-import static io.chunkworld.api.utilities.Constants.CHUNK_SIZE;
-import static io.chunkworld.api.utilities.Constants.CHUNK_SIZE_SQUARED;
+import static io.chunkworld.api.core.utils.Constants.CHUNK_SIZE;
+import static io.chunkworld.api.core.utils.Constants.CHUNK_SIZE_SQUARED;
 
 public class LocationUtils {
     /**
