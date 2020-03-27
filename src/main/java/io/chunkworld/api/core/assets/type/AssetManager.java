@@ -50,6 +50,19 @@ public class AssetManager {
     }
 
     /**
+     * Retrieves an asset with the given urn and type
+     *
+     * @param urn  The urn of the asset to retrieve
+     * @param type The type of asset to retrieve
+     * @param <T>  The class of Asset
+     * @param <U>  The class of AssetData
+     * @return An Optional containing the requested asset if successfully obtained
+     */
+    public <T extends Asset<U>, U extends AssetData> Optional<T> getAsset(String urn, Class<T> type) {
+        return getAsset(new ResourceUrn(urn), type);
+    }
+
+    /**
      * Creates or reloads an asset with the given urn, data and type. The type must be the actual type of the asset, not a super type.
      *
      * @param urn  The urn of the asset

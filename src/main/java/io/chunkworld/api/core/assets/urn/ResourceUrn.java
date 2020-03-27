@@ -242,6 +242,17 @@ public final class ResourceUrn implements Comparable<ResourceUrn> {
     }
 
     /**
+     * Checks to see if the input matches the current instance's resource urn
+     *
+     * @param urn the urn to match against
+     * @return returns true if they match
+     */
+    public boolean isOfType(ResourceUrn urn) {
+        var root = getRootUrn();
+        return root.equals(urn);
+    }
+
+    /**
      * @return If this urn is an instance, returns the urn without the instance marker. Otherwise this urn.
      */
     public ResourceUrn getParentUrn() {
@@ -315,8 +326,6 @@ public final class ResourceUrn implements Comparable<ResourceUrn> {
         }
         return result;
     }
-
-
 
 
 }

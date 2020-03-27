@@ -12,15 +12,9 @@ public class Import extends Define {
     @Getter
     private String definition;
 
-    private boolean vertex;
 
     public Import(int line, String[] source) {
         super(line, source);
-    }
-
-    public Import(ResourceUrn urn, String definition) {
-        this.urn = urn;
-        this.definition = definition;
     }
 
     @Override
@@ -29,6 +23,16 @@ public class Import extends Define {
         urn = new ResourceUrn(name);
         definition = input.substring(input.indexOf("->") + 2).trim();
         return name;
+    }
+
+    /**
+     * An import isn't supposed to be used like this
+     *
+     * @return returns the serialized value
+     */
+    @Override
+    public String serialize() {
+        return "N/A";
     }
 
     @Override

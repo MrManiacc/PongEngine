@@ -5,7 +5,7 @@ import lombok.Getter;
 /**
  * Represents a custom piece of code that can be imported
  */
-public class Custom extends Define {
+public class Custom extends Define implements Comparable<Custom> {
     @Getter
     private String value;
 
@@ -13,10 +13,10 @@ public class Custom extends Define {
         super(line, source);
     }
 
-    public Custom(String name, String value) {
-        this.line = -1;
-        this.name = name;
-        this.value = value;
+    public Custom(int line, Custom copy) {
+        this.line = line;
+        this.name = copy.name;
+        this.value = copy.value;
     }
 
     /**
@@ -31,6 +31,16 @@ public class Custom extends Define {
         return input.substring(input.indexOf(" ") + 1, input.indexOf("->")).trim();
     }
 
+    /**
+     * Customs are just text so we return the text value
+     *
+     * @return returns the text value
+     */
+    @Override
+    public String serialize() {
+        return value;
+    }
+
     @Override
     public String toString() {
         return "Custom{" +
@@ -39,4 +49,10 @@ public class Custom extends Define {
                 ", name='" + name + '\'' +
                 '}';
     }
+
+    @Override
+    public int compareTo(Custom o) {
+        return this.name.compareTo(o.name);
+    }
+
 }

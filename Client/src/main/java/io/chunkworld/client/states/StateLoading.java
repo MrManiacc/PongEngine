@@ -13,8 +13,6 @@ import lombok.Getter;
 
 import java.util.Queue;
 
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_A;
-
 /**
  * Used to load all of the assets and do other setup tasks
  */
@@ -31,6 +29,7 @@ public class StateLoading implements GameState {
     private GameEngine engine;
 
     @In
+
     private EngineTime time;
 
     /**
@@ -76,7 +75,7 @@ public class StateLoading implements GameState {
             engine.changeState(new StateInGame());
         } else {
             float progressValue = (progress + current.getExpectedCost() * current.getProgress()) / maxProgress;
-            System.out.println(current.getMessage() + ": (" + progressValue + "/" + maxProgress + ")");
+           // System.out.println(current.getMessage() + ": (" + progressValue + "/" + maxProgress + ")");
         }
     }
 

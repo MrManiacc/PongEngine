@@ -37,7 +37,7 @@ public class ShaderFormat extends AbstractAssetFileFormat<ShaderData> {
         var stream = input.openStream();
         var lines = Files.readAllLines(input.getPath());
         stream.close();
-        var data = buildShader(lines);
+        var data = buildShader(lines, urn);
         return ShaderParser.parseShader(data, urn);
     }
 
@@ -47,7 +47,7 @@ public class ShaderFormat extends AbstractAssetFileFormat<ShaderData> {
      * @param lines the input to build for
      * @return returns the shader data
      */
-    private ShaderData buildShader(List<String> lines) {
+    private ShaderData buildShader(List<String> lines, ResourceUrn urn) {
         var customLinesList = new ArrayList<String>();
         var shaderLines = parseShaderLines(lines, customLinesList);
         var vertexSource = new String[shaderLines[1] - shaderLines[0]];
@@ -59,7 +59,18 @@ public class ShaderFormat extends AbstractAssetFileFormat<ShaderData> {
             vertexSource[j] = lines.get(i).trim();
         for (int i = shaderLines[2], j = 0; i < shaderLines[3]; i++, j++)
             fragSource[j] = lines.get(i).trim();
-        return new ShaderData(vertexSource, fragSource, customLines);
+        var vertSrc = new ArrayList<String>();
+        for (var line : vertexSource) {
+            if (!line.trim().startsWith("//"))
+                vertSrc.add(line);
+        }
+
+        var fragSrc = new ArrayList<String>();
+        for (var line : fragSource) {
+            if (!line.trim().startsWith("//"))
+                fragSrc.add(line);
+        }
+        return new ShaderData(urn.getResourceName().toLowerCase(), vertSrc.toArray(new String[0]), fragSrc.toArray(new String[0]), customLines);
     }
 
     /**

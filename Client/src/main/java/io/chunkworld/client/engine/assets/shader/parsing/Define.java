@@ -1,14 +1,18 @@
 package io.chunkworld.client.engine.assets.shader.parsing;
 
+import com.google.common.collect.Lists;
 import io.chunkworld.api.core.annotations.Share;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.List;
 
 /**
  * An abstract definition of a #define
  */
 public abstract class Define {
     @Getter
+    @Setter
     protected int line;
     @Getter
     protected String[] source;
@@ -37,4 +41,11 @@ public abstract class Define {
      * @return should already return a name
      */
     protected abstract String parse(String line);
+
+    /**
+     * Serialize the data
+     *
+     * @return returns the serialized string
+     */
+    public abstract String serialize();
 }

@@ -1,6 +1,9 @@
 package io.chunkworld.client.engine.assets.shader.parsing;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import io.chunkworld.api.core.assets.naming.Name;
 import io.chunkworld.api.core.assets.urn.ResourceUrn;
 import io.chunkworld.client.engine.assets.shader.ShaderData;
 
@@ -12,6 +15,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class ShaderParser {
     private static final Map<ResourceUrn, ShaderData> cachedData = Maps.newHashMap();
+    private static final Map<ResourceUrn, Custom> globalCustoms = Maps.newHashMap();
+    private static final Map<ResourceUrn, Bind> globalBinds = Maps.newHashMap();
+    private static final Map<ResourceUrn, Uniform> globalUniforms = Maps.newHashMap();
+    private static final Set<ResourceUrn> processedShaders = Sets.newHashSet();
 
     public ShaderParser() {
     }
@@ -23,83 +30,208 @@ public class ShaderParser {
      * @return returns an optional shader data
      */
     public static ShaderData parseShader(ShaderData shaderData, ResourceUrn resource) {
-
-        for (int i = 0; i < shaderData.getCustomLines().length; i++) {
+        for (int i = 0; i < shaderData.getCustomLines().length; i++)
             processLine(shaderData.getCustomLines(), i, shaderData, false, false);
-        }
-        for (int i = 0; i < shaderData.getVertexSource().length; i++) {
+        for (int i = 0; i < shaderData.getVertexSource().length; i++)
             processLine(shaderData.getVertexSource(), i, shaderData, true, false);
-        }
-
-        for (int i = 0; i < shaderData.getFragmentSource().length; i++) {
+        for (int i = 0; i < shaderData.getFragmentSource().length; i++)
             processLine(shaderData.getFragmentSource(), i, shaderData, false, true);
+        if (!isReady(shaderData))
+            return null;
+        else{
+            System.err.println(resource);
         }
-        var vertBinds = new StringBuilder();
-        var fragBinds = new StringBuilder();
-        shaderData.getBinds().forEach((name, bind) -> {
-            var type = bind.getType();
-            if (bind.isInVertex())
-                vertBinds.append("in").append(" ").append(type).append(" ").append(name).append(";").append("\n");
-            if (bind.isInFrag())
-                fragBinds.append("in").append(" ").append(type).append(" ").append(name).append(";").append("\n");
+        processGlobals(shaderData, resource);
+        processImports(shaderData, resource);
+
+        System.out.println(shaderData);
+        processedShaders.add(resource);
+
+        return shaderData;
+    }
+
+    /**
+     * Builds the global shader data
+     *
+     * @param data the data to process
+     */
+    private static void processGlobals(ShaderData data, ResourceUrn urn) {
+        data.getBindsMap().forEach((s, bind) -> {
+            var resourceUrn = new ResourceUrn(urn, new Name(s));
+            globalBinds.put(resourceUrn, bind);
         });
-        shaderData.addCustom(new Custom("FRAG_BINDS", fragBinds.toString()));
-        shaderData.addCustom(new Custom("VERT_BINDS", vertBinds.toString()));
-
-
-        var vertUniforms = new StringBuilder();
-        var fragUniforms = new StringBuilder();
-
-        shaderData.getUniforms().forEach((name, uniform) -> {
-            if (uniform.isInVertex())
-                vertUniforms.append("uniform").append(" ").append(uniform.getType()).append(" ").append(name).append(";").append("\n");
-            if (uniform.isInFrag())
-                fragUniforms.append("uniform").append(" ").append(uniform.getType()).append(" ").append(name).append(";").append("\n");
+        data.getUniformMap().forEach((s, imp) -> {
+            var resourceUrn = new ResourceUrn(urn, new Name(s));
+            globalUniforms.put(resourceUrn, imp);
         });
+        data.getCustomsMap().forEach((s, custom) -> {
+            var resourceUrn = new ResourceUrn(urn, new Name(s));
+            globalCustoms.put(resourceUrn, custom);
+        });
+    }
 
-        shaderData.addCustom(new Custom("VERT_UNIFORMS", vertUniforms.toString()));
-        shaderData.addCustom(new Custom("FRAG_UNIFORMS", fragUniforms.toString()));
+    /**
+     * Processes the imports for the shader
+     *
+     * @param data the data to process
+     */
+    private static void processImports(ShaderData data, ResourceUrn urn) {
+        data.getImportsMap().forEach((name, imports) -> {
+            imports.forEach(_import -> {
+                switch (_import.getDefinition()) {
+                    case "BINDS":
+                        var binds = getGlobalBinds(new ResourceUrn(name));
+                        binds.forEach(bind -> {
+                            var b = new Bind(_import.getLine(), bind);
+                            b.setInVertex(_import.isInVertex());
+                            b.setInFrag(_import.isInFrag());
+                            data.addBind(b);
+                        });
+                        break;
+                    case "UNIFORMS":
+                        var uniforms = getGlobalUniforms(new ResourceUrn(name));
+                        uniforms.forEach(uniform -> {
+                            var u = new Uniform(_import.getLine(), uniform);
+                            data.addUniform(u);
+                        });
+                        break;
+                    default:
+                        var resourceUrn = extractUrn(name, _import.getDefinition());
+                        var customs = getGlobalCustoms(resourceUrn);
+                        customs.forEach(custom -> {
+                            var c = new Custom(_import.getLine(), custom);
+                            c.setInVertex(_import.isInVertex());
+                            c.setInFrag(_import.isInFrag());
+                            data.addCustom(c);
+                        });
+                        break;
+                }
+            });
+        });
+    }
+
+    /**
+     * Computes the proper urn from the given input
+     *
+     * @param input the input urn
+     * @return returns the resource urn
+     */
+    private static ResourceUrn extractUrn(String input, String fragment) {
+        if (input.contains(":")) {
+            var ids = input.split(":");
+            var moduleBuilder = new StringBuilder();
+            var name = "";
+            for (var i = 0; i < ids.length; i++) {
+                if (i < ids.length - 1)
+                    moduleBuilder.append(ids[i]).append(":");
+                else
+                    name = ids[i];
+            }
+            var module = moduleBuilder.toString();
+            module = module.substring(0, module.lastIndexOf(":"));
+
+            return new ResourceUrn(module, name, fragment);
+        } else
+            return new ResourceUrn(input, fragment);
+    }
+
+    /**
+     * Get's the binds by the given urn type, will try to get the instance first, then by type
+     *
+     * @param urn the type to check
+     * @return returns a list of binds by the given urn
+     */
+    private static List<Bind> getGlobalBinds(ResourceUrn urn) {
+        List<Bind> output = Lists.newArrayList();
+        globalBinds.forEach((resourceUrn, bind) -> {
+            if (resourceUrn.equals(urn))
+                output.add(bind);
+            else if (resourceUrn.isOfType(urn))
+                output.add(bind);
+        });
+        Collections.sort(output);
+        return output;
+    }
+
+    /**
+     * Get's the binds by the given urn type, will try to get the instance first, then by type
+     *
+     * @param urn the type to check
+     * @return returns a list of binds by the given urn
+     */
+    private static List<Uniform> getGlobalUniforms(ResourceUrn urn) {
+        List<Uniform> output = Lists.newArrayList();
+        globalUniforms.forEach((resourceUrn, bind) -> {
+            if (resourceUrn.equals(urn))
+                output.add(bind);
+            else if (resourceUrn.isOfType(urn))
+                output.add(bind);
+        });
+        Collections.sort(output);
+        return output;
+    }
+
+    /**
+     * Gets a global custom via an import
+     *
+     * @param urn the urn to get the custom by
+     * @return returns a list of sorted customs
+     */
+    private static List<Custom> getGlobalCustoms(ResourceUrn urn) {
+        List<Custom> output = Lists.newArrayList();
+        globalCustoms.forEach((resourceUrn, custom) -> {
+            if (urn.equals(resourceUrn)) {
+                output.add(custom);
+            }
+        });
+        Collections.sort(output);
+        return output;
+    }
 
 
-        cachedData.put(resource, shaderData);
-        var valid = new AtomicBoolean(true);
-        shaderData.getImports().forEach((name, imp) -> {
-            imp.forEach(anImport -> {
-                var urn = new ResourceUrn(name);
-                if (!cachedData.containsKey(urn)) {
-                    valid.set(false);
-                } else {
-                    var importAsset = cachedData.get(urn);
-                    if (importAsset.getCustom().containsKey(anImport.getDefinition())) {
-                        var custom = importAsset.getCustom().get(anImport.getDefinition());
-                        System.out.println(anImport.isInVertex());
-                        anImport.source[anImport.line] = custom.getValue();
-                    } else {
-                        if (importAsset.getCustom().containsKey("VERT_" + anImport.getDefinition())) {
-                            var custom = importAsset.getCustom().get("VERT_" + anImport.getDefinition());
-                            if (!anImport.isInFrag())
-                                anImport.source[anImport.line] = custom.getValue();
-                            else if (anImport.source[anImport.line].contains("#define")) {
-                                System.out.println(anImport.source[anImport.line]);
-                                anImport.source[anImport.line] = "";
-                            }
-                        } else if (importAsset.getCustom().containsKey("FRAG_" + anImport.getDefinition())) {
-                            var custom = importAsset.getCustom().get("FRAG_" + anImport.getDefinition());
-                            if (!anImport.isInVertex())
-                                anImport.source[anImport.line] = custom.getValue();
-                            else if (anImport.source[anImport.line].contains("#define")) {
-                                anImport.source[anImport.line] = "";
-                            }
-                        }
-                    }
+    /**
+     * this method checks to see if the global imports are present for the given shader
+     *
+     * @param data the data to process
+     * @return returns true if ready
+     */
+    private static boolean isReady(ShaderData data) {
+        var present = new AtomicBoolean(true);
+        data.getImportsMap().forEach((urn, imports) -> {
+            imports.forEach(anImport -> {
+                var _import = new ResourceUrn(anImport.name);
+                switch (anImport.getDefinition()) {
+                    case "BINDS":
+                        var containsBind = new AtomicBoolean(false);
+                        globalBinds.forEach((resourceUrn, bind) -> {
+                            if (resourceUrn.isOfType(_import))
+                                containsBind.set(true);
+                        });
+                        if (!containsBind.get())
+                            present.set(false);
+                        break;
+                    case "UNIFORMS":
+                        var containsUniform = new AtomicBoolean(false);
+                        globalUniforms.forEach((resourceUrn, bind) -> {
+                            if (resourceUrn.isOfType(_import))
+                                containsUniform.set(true);
+                        });
+                        if (!containsUniform.get())
+                            present.set(false);
+                        break;
+                    default:
+                        var custom = new ResourceUrn(_import, anImport.getDefinition());
+                        if (!globalCustoms.containsKey(custom))
+                            present.set(false);
+                        break;
                 }
             });
         });
 
-        if (!valid.get())
-            return null;
-        return shaderData;
+
+        return present.get();
     }
+
 
     /**
      * Process a given line
@@ -118,9 +250,10 @@ public class ShaderParser {
                     break;
                 default:
                     if (type.equals(type.toLowerCase()) && type.contains(":") && !type.contains("\"")) {
-                        var impt = data.addImport(new Import(index, input));
-                        impt.setInFrag(frag);
-                        impt.setInVertex(vertex);
+                        var imported = new Import(index, input);
+                        imported.setInVertex(vertex);
+                        imported.setInFrag(frag);
+                        data.addImport(imported);
                     } else if (line.contains("\"")) {
                         var custom = data.addCustom(new Custom(index, input));
                         custom.setInFrag(frag);
@@ -139,10 +272,12 @@ public class ShaderParser {
         if (line.contains(",")) {
             var elements = line.split(",");
             for (var element : elements) {
-                shaderData.addUniform(new Uniform(index, lines, element));
+                var uniform = new Uniform(index, lines, element);
+                shaderData.addUniform(uniform);
             }
         } else {
-            shaderData.addUniform(new Uniform(index, lines, line));
+            var uniform = new Uniform(index, lines, line);
+            shaderData.addUniform(uniform);
         }
     }
 
@@ -168,15 +303,17 @@ public class ShaderParser {
             if (start != 0)
                 elements.add(line.substring(start + 1).trim());
             for (var element : elements) {
-                var bind = data.addBind(new Bind(index, lines, element));
+                var bind = new Bind(index, lines, element);
                 bind.setInFrag(frag);
                 bind.setInVertex(vert);
+                data.addBind(bind);
             }
 
         } else {
-            var bind = data.addBind(new Bind(index, lines, line));
+            var bind = new Bind(index, lines, line);
             bind.setInFrag(frag);
             bind.setInVertex(vert);
+            data.addBind(bind);
         }
     }
 

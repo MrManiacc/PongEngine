@@ -5,7 +5,7 @@ import lombok.Getter;
 /**
  * Represents some bind that can be appended to the shader dynamically
  */
-public class Bind extends Define {
+public class Bind extends Define implements Comparable<Bind> {
     @Getter
     private int attribute;
     @Getter
@@ -23,6 +23,25 @@ public class Bind extends Define {
         this.name = parse(input);
     }
 
+    public Bind(int line, String name, int attribute, String type, boolean passBind) {
+        this.line = line;
+        this.passBind = passBind;
+        this.name = name;
+        this.attribute = attribute;
+        this.type = type;
+    }
+
+    /**
+     * Creates a copy with the specified line; used for importing
+     *
+     * @param line the line to set to
+     * @param copy the copy
+     */
+    public Bind(int line, Bind copy) {
+        this(line, copy.name, copy.attribute, copy.type, copy.passBind);
+    }
+
+
     /**
      * Parsed the asset
      *
@@ -38,12 +57,33 @@ public class Bind extends Define {
         return name;
     }
 
+    /**
+     * Serialize's the data
+     *
+     * @return returns the glsl representation of the uniform
+     */
+    public String serialize() {
+        return "in " + type + " " + name + ";";
+    }
+
     @Override
     public String toString() {
         return "Bind{" +
-                "attribute=" + attribute +
+                "name=" + name +
+                ", attribute=" + attribute +
                 ", type='" + type + '\'' +
                 ", passBind=" + passBind +
+                ", line=" + line +
                 '}';
     }
+
+    @Override
+    public int compareTo(Bind o) {
+        if (attribute == o.attribute)
+            return 0;
+        return attribute - o.attribute;
+    }
 }
+
+
+

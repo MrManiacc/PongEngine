@@ -220,7 +220,7 @@ public class ChunkWorldEngine implements GameEngine {
     private void changeStatus(EngineStatus newStatus) {
         Bus.Logic.post(new EngineStatusUpdatedEvent(this.status, newStatus));
         status = newStatus;
-        System.out.println("Updated status: " + newStatus.getDescription());
+        //System.out.println("Updated status: " + newStatus.getDescription());
     }
 
     /**
