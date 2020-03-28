@@ -32,7 +32,6 @@ public interface GameState {
     default void render() {
     }
 
-
     int getProgress();
 
     int getMaxProgress();

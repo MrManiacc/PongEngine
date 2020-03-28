@@ -22,17 +22,6 @@ public class AssetManager {
         this.assetTypeManager = assetTypeManager;
     }
 
-//    /**
-//     * @param urn  The urn of the asset to check. Must not be an instance urn
-//     * @param type The Asset class of interest
-//     * @return whether an asset is loaded with the given urn
-//     */
-//    public boolean isLoaded(ResourceUrn urn, Class<? extends Asset<?>> type) {
-//        var assetType = assetTypeManager.getAssetType(type);
-//        return assetType.map(value -> value.isLoaded(urn)).orElse(false);
-//    }
-
-
     /**
      * Retrieves an asset with the given urn and type
      *

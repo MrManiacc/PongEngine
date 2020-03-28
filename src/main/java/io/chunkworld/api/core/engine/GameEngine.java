@@ -1,5 +1,6 @@
 package io.chunkworld.api.core.engine;
 
+import io.chunkworld.api.core.assets.urn.ResourceUrn;
 import io.chunkworld.api.core.context.Context;
 import io.chunkworld.api.core.state.GameState;
 import io.chunkworld.api.core.status.EngineStatus;
@@ -29,6 +30,23 @@ public interface GameEngine {
     default void addSubsystems(Collection<EngineSubsystem> systems) {
         systems.forEach(this::addSubsystem);
     }
+
+    /**
+     * Removes a system by the specified urn
+     *
+     * @param urn the urn
+     */
+    EngineSubsystem removeSubsystem(ResourceUrn urn);
+
+    /**
+     * Helper method to removes a sub system by the urn
+     *
+     * @param urn
+     */
+    default EngineSubsystem removeSubsystem(String urn) {
+        return removeSubsystem(new ResourceUrn(urn));
+    }
+
 
     /**
      * Runs the engine, which will block the thread.

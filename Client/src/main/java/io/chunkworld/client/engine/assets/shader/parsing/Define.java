@@ -1,11 +1,7 @@
 package io.chunkworld.client.engine.assets.shader.parsing;
 
-import com.google.common.collect.Lists;
-import io.chunkworld.api.core.annotations.Share;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.List;
 
 /**
  * An abstract definition of a #define

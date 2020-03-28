@@ -38,15 +38,9 @@ public class ShaderParser {
             processLine(shaderData.getFragmentSource(), i, shaderData, false, true);
         if (!isReady(shaderData))
             return null;
-        else{
-            System.err.println(resource);
-        }
         processGlobals(shaderData, resource);
         processImports(shaderData, resource);
-
-        System.out.println(shaderData);
         processedShaders.add(resource);
-
         return shaderData;
     }
 
@@ -57,15 +51,15 @@ public class ShaderParser {
      */
     private static void processGlobals(ShaderData data, ResourceUrn urn) {
         data.getBindsMap().forEach((s, bind) -> {
-            var resourceUrn = new ResourceUrn(urn, new Name(s));
+            var resourceUrn = new ResourceUrn(urn.getModuleName(), new Name(urn.getResourceName() + ":" + urn.getFragmentName()), new Name(s));
             globalBinds.put(resourceUrn, bind);
         });
         data.getUniformMap().forEach((s, imp) -> {
-            var resourceUrn = new ResourceUrn(urn, new Name(s));
+            var resourceUrn = new ResourceUrn(urn.getModuleName(), new Name(urn.getResourceName() + ":" + urn.getFragmentName()), new Name(s));
             globalUniforms.put(resourceUrn, imp);
         });
         data.getCustomsMap().forEach((s, custom) -> {
-            var resourceUrn = new ResourceUrn(urn, new Name(s));
+            var resourceUrn = new ResourceUrn(urn.getModuleName(), new Name(urn.getResourceName() + ":" + urn.getFragmentName()), new Name(s));
             globalCustoms.put(resourceUrn, custom);
         });
     }
@@ -180,7 +174,9 @@ public class ShaderParser {
     private static List<Custom> getGlobalCustoms(ResourceUrn urn) {
         List<Custom> output = Lists.newArrayList();
         globalCustoms.forEach((resourceUrn, custom) -> {
+//            System.out.println("in " + urn.toString() + " out " + resourceUrn);
             if (urn.equals(resourceUrn)) {
+                System.out.println("HERE");
                 output.add(custom);
             }
         });
@@ -200,6 +196,7 @@ public class ShaderParser {
         data.getImportsMap().forEach((urn, imports) -> {
             imports.forEach(anImport -> {
                 var _import = new ResourceUrn(anImport.name);
+//                System.out.println(_import.getResourceName() + " : " + _import.getModuleName());
                 switch (anImport.getDefinition()) {
                     case "BINDS":
                         var containsBind = new AtomicBoolean(false);

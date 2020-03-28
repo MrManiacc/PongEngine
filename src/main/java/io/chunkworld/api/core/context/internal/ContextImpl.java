@@ -35,7 +35,7 @@ public class ContextImpl implements Context {
         if (parent != null) {
             return parent.get(type);
         }
-        return result;
+        return null;
     }
 
     @Override

@@ -2,9 +2,9 @@ package io.chunkworld.client.engine.load;
 
 import io.chunkworld.api.core.modes.SingleStepLoadProcess;
 
-public class RegisterServer extends SingleStepLoadProcess {
+public class LoadServer extends SingleStepLoadProcess {
 
-    public RegisterServer() {
+    public LoadServer() {
         super("Registering client...", 1);
     }
 

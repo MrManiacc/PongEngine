@@ -1,11 +1,15 @@
 package io.chunkworld.client.engine;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import io.chunkworld.api.bus.Bus;
-import io.chunkworld.api.core.annotations.In;
+import io.chunkworld.api.core.injection.Injector;
+import io.chunkworld.api.core.injection.anotations.In;
+import io.chunkworld.api.core.assets.urn.ResourceUrn;
 import io.chunkworld.api.core.context.Context;
 import io.chunkworld.api.core.context.CoreRegistry;
 import io.chunkworld.api.core.context.internal.ContextImpl;
+import io.chunkworld.api.core.ecs.entity.system.EntitySystemManager;
 import io.chunkworld.api.core.engine.GameEngine;
 import io.chunkworld.api.core.injection.InjectionHelper;
 import io.chunkworld.api.core.state.GameState;
@@ -15,50 +19,68 @@ import io.chunkworld.api.core.status.EngineStatusUpdatedEvent;
 import io.chunkworld.api.core.status.StandardGameStatus;
 import io.chunkworld.api.core.systems.EngineSubsystem;
 import io.chunkworld.api.core.time.EngineTime;
-import io.chunkworld.api.core.time.Time;
 import lombok.Getter;
 
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.Map;
 
 public class ChunkWorldEngine implements GameEngine {
-    @Getter
-    private GameState state;
-    private GameState pendingState;
-    @Getter
-    private volatile boolean shutdownRequested;
-    @Getter
-    private volatile boolean running;
-    @Getter
-    private Deque<EngineSubsystem> allSubsystems;
-    @Getter
-    private EngineStatus status = StandardGameStatus.UNSTARTED;
-
-    @In
-    private EngineTime time;
+    @Getter private GameState state;
+    @Getter private GameState pendingState;
+    @Getter private volatile boolean shutdownRequested;
+    @Getter private volatile boolean running;
+    @Getter private Deque<EngineSubsystem> allSubsystems;
+    @Getter private EngineStatus status = StandardGameStatus.UNSTARTED;
+    @Getter private Context rootContext;
+    @In private EngineTime time;
+    @In private EntitySystemManager systemManager;
+    private final Map<ResourceUrn, EngineSubsystem> registeredSubsystems;
 
     /**
      * Contains objects that life for the duration of this engine.
      */
-    @Getter
-    private Context rootContext;
 
     public ChunkWorldEngine() {
         this.rootContext = new ContextImpl();
         CoreRegistry.setContext(rootContext);
         this.allSubsystems = Queues.newArrayDeque();
+        this.registeredSubsystems = Maps.newConcurrentMap();
     }
 
     /**
      * Adds a sub system to the engine
      *
-     * @param systems the systems
+     * @param system the systems
      */
-    public void addSubsystem(EngineSubsystem systems) {
-        this.allSubsystems.add(systems);
+    public void addSubsystem(EngineSubsystem system) {
+        var urn = new ResourceUrn("engine", "subsystems", system.getName().toLowerCase());
+        if (!registeredSubsystems.containsKey(urn)) {
+            this.allSubsystems.add(system);
+            registeredSubsystems.put(urn, system);
+        }
     }
 
+    /**
+     * Removes a sub system with the given urn
+     *
+     * @param urn the urn
+     */
+    @Override
+    public EngineSubsystem removeSubsystem(ResourceUrn urn) {
+        var system = registeredSubsystems.get(urn);
+        if (system != null) {
+            allSubsystems.remove(system);
+            registeredSubsystems.remove(urn);
+        }
+        return system;
+    }
 
+    /**
+     * The main run loop, will tick the game
+     *
+     * @param initialState the initial state
+     */
     @Override
     public void run(GameState initialState) {
         changeStatus(StandardGameStatus.RUNNING);
@@ -66,7 +88,6 @@ public class ChunkWorldEngine implements GameEngine {
         initialize(initialState);
         while (tick()) {
         }
-
     }
 
     /**
@@ -87,7 +108,10 @@ public class ChunkWorldEngine implements GameEngine {
 
         initSubsystems();
 
+
         postInitSubsystems();
+
+
     }
 
 
@@ -115,7 +139,7 @@ public class ChunkWorldEngine implements GameEngine {
         Iterator<Float> updateCycles = time.tick();
 
         for (EngineSubsystem subsystem : allSubsystems) {
-            subsystem.preUpdate(state, time.getRealDelta());
+            subsystem.preUpdate(state);
         }
 
         while (updateCycles.hasNext()) {
@@ -123,9 +147,13 @@ public class ChunkWorldEngine implements GameEngine {
             state.update(updateDelta);
         }
 
-        for (EngineSubsystem subsystem : allSubsystems) {
-            subsystem.postUpdate(state, time.getRealDelta());
-        }
+        //Process the entity systems
+        if (systemManager != null)
+            systemManager.process();
+
+        for (EngineSubsystem subsystem : allSubsystems)
+            subsystem.postUpdate(state);
+
     }
 
     /**
@@ -154,21 +182,21 @@ public class ChunkWorldEngine implements GameEngine {
      * Initialize the managers
      */
     private void initManagers() {
-
     }
 
     /**
      * This class will inject all of the variables inside the root context
      */
     private void injectSubsystems() {
-        InjectionHelper.inject(this, rootContext);
+//        InjectionHelper.injectGenerics(this, rootContext);
+        Injector.GENERICS.inject(this, true);
         for (EngineSubsystem subsystem : allSubsystems) {
             InjectionHelper.share(subsystem);
         }
         changeStatus(ChunkWorldEngineStatus.INJECTING_INSTANCES);
         for (EngineSubsystem subsystem : allSubsystems) {
             changeStatus(() -> "Scanning for shared variables in " + subsystem.getName() + " subsystem");
-            subsystem.inject(rootContext);
+            Injector.GENERICS.inject(subsystem, true);
         }
     }
 
@@ -179,8 +207,17 @@ public class ChunkWorldEngine implements GameEngine {
         changeStatus(ChunkWorldEngineStatus.INITIALIZING_SUBSYSTEMS);
         for (EngineSubsystem subsystem : allSubsystems) {
             changeStatus(() -> "Initialising " + subsystem.getName() + " subsystem");
-            subsystem.initialise(this, rootContext);
+            subsystem.initialise();
         }
+    }
+
+    /**
+     * Initializes all of the entity systems
+     */
+    public void initEntitySystems() {
+        Injector.GENERICS.inject(this);
+        changeStatus(ChunkWorldEngineStatus.INITIALIZING_SUBSYSTEMS);
+        systemManager.initialize();
     }
 
 
@@ -190,7 +227,7 @@ public class ChunkWorldEngine implements GameEngine {
     private void postInitSubsystems() {
         for (EngineSubsystem subsystem : allSubsystems) {
             changeStatus(() -> "Post-Initialising " + subsystem.getName() + " subsystem");
-            subsystem.postInitialise(rootContext);
+            subsystem.postInitialise();
         }
     }
 
@@ -233,8 +270,10 @@ public class ChunkWorldEngine implements GameEngine {
             state.dispose();
         }
         state = newState;
-        InjectionHelper.inject(state);
+        Injector.GENERICS.inject(state, false);
         newState.init();
+        //We want to re-inject the sub systems after the state has changed, as somethings may be updated now
+        injectSubsystems();
     }
 
     @Override

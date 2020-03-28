@@ -1,14 +1,18 @@
 package io.chunkworld.client.states;
 
 import com.google.common.collect.Queues;
-import io.chunkworld.api.core.annotations.In;
-import io.chunkworld.api.core.context.Context;
+import io.chunkworld.api.core.injection.Injector;
+import io.chunkworld.api.core.injection.anotations.In;
 import io.chunkworld.api.core.engine.GameEngine;
 import io.chunkworld.api.core.injection.InjectionHelper;
 import io.chunkworld.api.core.modes.LoadProcess;
 import io.chunkworld.api.core.state.GameState;
 import io.chunkworld.api.core.time.EngineTime;
+import io.chunkworld.client.engine.ChunkWorldEngine;
 import io.chunkworld.client.engine.load.*;
+import io.chunkworld.client.engine.subsystems.gui.GuiSubsystem;
+import io.chunkworld.client.pong.load.LoadEntities;
+import io.chunkworld.client.pong.load.LoadSystems;
 import lombok.Getter;
 
 import java.util.Queue;
@@ -17,20 +21,13 @@ import java.util.Queue;
  * Used to load all of the assets and do other setup tasks
  */
 public class StateLoading implements GameState {
+    @Getter private int progress;
+    @Getter private int maxProgress;
+    @In private GameEngine engine;
+    @In private EngineTime time;
 
     private Queue<LoadProcess> loadProcesses = Queues.newArrayDeque();
     private LoadProcess current;
-    @Getter
-    private int progress;
-    @Getter
-    private int maxProgress;
-
-    @In
-    private GameEngine engine;
-
-    @In
-
-    private EngineTime time;
 
     /**
      * Initialize the client/server
@@ -38,6 +35,7 @@ public class StateLoading implements GameState {
     @Override
     public void init() {
         initClient();
+        registerSubsystems();
         popStep();
     }
 
@@ -46,16 +44,26 @@ public class StateLoading implements GameState {
      */
     private void initClient() {
         //Initialize the client here
-        pushLoadProcess(new RegisterConfig());
-        pushLoadProcess(new RegisterAssets());
-        pushLoadProcess(new RegisterClient());
+        pushLoadProcess(new LoadConfiguration());
+        pushLoadProcess(new LoadAssets());
+        pushLoadProcess(new LoadClient());
+        pushLoadProcess(new LoadEntitySystems());
+        pushLoadProcess(new LoadSystems());
+        pushLoadProcess(new LoadEntities());
+    }
+
+    /**
+     * The subsystem to registers
+     */
+    private void registerSubsystems() {
+        engine.addSubsystem(new GuiSubsystem());
     }
 
     /**
      * Initialize the server
      */
     private void initServer() {
-        loadProcesses.add(new RegisterServer());
+        loadProcesses.add(new LoadServer());
     }
 
     /**
@@ -67,17 +75,18 @@ public class StateLoading implements GameState {
     public void update(float delta) {
         long startTime = time.getRealTimeInMs();
         while (current != null && time.getRealTimeInMs() - startTime < 20 && !engine.hasPendingState()) {
-            if (current.step()) {
+            if (current.step())
                 popStep();
-            }
         }
         if (current == null) {
+            ((ChunkWorldEngine) engine).initEntitySystems();
             engine.changeState(new StateInGame());
         } else {
             float progressValue = (progress + current.getExpectedCost() * current.getProgress()) / maxProgress;
-           // System.out.println(current.getMessage() + ": (" + progressValue + "/" + maxProgress + ")");
+//            System.out.println(current.getMessage() + ": (" + progressValue + "/" + maxProgress + ")");
         }
     }
+
 
     private void popStep() {
         if (current != null) {
@@ -87,6 +96,7 @@ public class StateLoading implements GameState {
         if (!loadProcesses.isEmpty()) {
             current = loadProcesses.remove();
             System.err.println("Load process: " + current.getMessage());
+            Injector.GENERICS.inject(current);
             current.begin();
         }
     }
@@ -98,6 +108,7 @@ public class StateLoading implements GameState {
      */
     private void pushLoadProcess(LoadProcess process) {
         loadProcesses.add(process);
-        InjectionHelper.inject(process);
+        this.maxProgress += process.getExpectedCost();
+        Injector.GENERICS.inject(process, true);
     }
 }

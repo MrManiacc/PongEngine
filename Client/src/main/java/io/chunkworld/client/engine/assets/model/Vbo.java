@@ -1,5 +1,6 @@
 package io.chunkworld.client.engine.assets.model;
 
+import lombok.Getter;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL15;
 
@@ -9,6 +10,10 @@ import java.nio.IntBuffer;
 public class Vbo {
     private final int vboId;
     private final int type;
+    @Getter
+    private float[] floatData;
+    @Getter
+    private int[] intData;
 
     private Vbo(int vboId, int type) {
         this.vboId = vboId;
@@ -50,6 +55,7 @@ public class Vbo {
         buffer.put(data);
         buffer.flip();
         storeData(buffer);
+        this.floatData = data;
     }
 
     /**
@@ -62,6 +68,7 @@ public class Vbo {
         buffer.put(data);
         buffer.flip();
         storeData(buffer);
+        this.intData = data;
     }
 
     /**

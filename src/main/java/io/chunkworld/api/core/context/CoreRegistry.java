@@ -45,6 +45,7 @@ public final class CoreRegistry {
         if (context == null) {
             return null;
         }
+
         if (type == Context.class) {
             return type.cast(context);
         }

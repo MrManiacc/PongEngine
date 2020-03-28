@@ -150,7 +150,6 @@ public class GlfwWindow implements IWindow {
 
         GL.createCapabilities();
 
-        System.out.println("window");
     }
 
     /**

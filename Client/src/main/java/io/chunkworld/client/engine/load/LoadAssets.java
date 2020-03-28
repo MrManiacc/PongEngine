@@ -1,8 +1,7 @@
 package io.chunkworld.client.engine.load;
 
-import com.artemis.annotations.PrefabData;
-import io.chunkworld.api.core.annotations.In;
-import io.chunkworld.api.core.assets.data.AssetFactory;
+import com.google.common.collect.Queues;
+import io.chunkworld.api.core.injection.anotations.In;
 import io.chunkworld.api.core.assets.files.AssetSourceResolver;
 import io.chunkworld.api.core.assets.type.AssetManager;
 import io.chunkworld.api.core.assets.type.AssetTypeManager;
@@ -11,19 +10,23 @@ import io.chunkworld.api.core.modes.SingleStepLoadProcess;
 import io.chunkworld.client.engine.assets.shader.Shader;
 import io.chunkworld.client.engine.assets.shader.ShaderFormat;
 import io.chunkworld.client.engine.assets.texture.Texture;
-import io.chunkworld.client.engine.assets.texture.TextureData;
 import io.chunkworld.client.engine.assets.texture.TextureFormat;
-import org.w3c.dom.Text;
+
+import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.Queue;
 
 /**
  * Registers the asset type manager
  */
-public class RegisterAssets extends SingleStepLoadProcess {
+public class LoadAssets extends SingleStepLoadProcess {
     @In
     private GameEngine engine;
+    private Queue<AssetSourceResolver> unresolved = Queues.newArrayDeque();
+    private AssetTypeManager typeManager;
 
-    public RegisterAssets() {
-        super("Register asset types", 1);
+    public LoadAssets() {
+        super("Registering asset types...", 1);
     }
 
     /**
@@ -33,13 +36,34 @@ public class RegisterAssets extends SingleStepLoadProcess {
      */
     @Override
     public boolean step() {
-        //TODO: register game assets here
-        var assetTypeManager = new AssetTypeManager();
-        registerAssetResolvers(assetTypeManager);
-        var assetManager = new AssetManager(assetTypeManager);
+        if (typeManager == null)
+            initialize();
+        nextUnresolved();
+        return unresolved.isEmpty();
+    }
+
+    /**
+     * Registers the asset resolver things
+     */
+    private void initialize() {
+        typeManager = new AssetTypeManager();
+        registerAssetResolvers(typeManager);
+        var assetManager = new AssetManager(typeManager);
         engine.getRootContext().put(AssetManager.class, assetManager);
-        resolveAssets(assetTypeManager);
-        return true;
+        resolveAssets();
+    }
+
+    /**
+     * Attempts to load the next source
+     */
+    private void nextUnresolved() {
+        if (this.unresolved.isEmpty()) return;
+        var unresolved = this.unresolved.poll();
+        if (unresolved == null) return;
+        if (!unresolved.resolveAssets()) {
+            //If it's unresolved again we put it to the back of the queue
+            this.unresolved.add(unresolved);
+        }
     }
 
     /**
@@ -54,12 +78,12 @@ public class RegisterAssets extends SingleStepLoadProcess {
 
     /**
      * Resolves the asset file paths for the registered types
-     *
-     * @param typeManager the type manager
      */
-    private void resolveAssets(AssetTypeManager typeManager) {
+    private void resolveAssets() {
         var assetSourceResolver = new AssetSourceResolver(typeManager);
-        assetSourceResolver.resolveAssets();
+        if (!assetSourceResolver.resolveAssets()) {
+            this.unresolved.add(assetSourceResolver);
+        }
     }
 
 

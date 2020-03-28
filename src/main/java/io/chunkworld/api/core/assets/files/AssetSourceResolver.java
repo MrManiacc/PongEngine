@@ -1,15 +1,15 @@
 package io.chunkworld.api.core.assets.files;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import io.chunkworld.api.core.assets.Asset;
 import io.chunkworld.api.core.assets.data.AssetData;
 import io.chunkworld.api.core.assets.type.AssetType;
 import io.chunkworld.api.core.assets.type.AssetTypeManager;
 import io.chunkworld.api.core.assets.urn.ResourceUrn;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
@@ -18,13 +18,11 @@ import java.util.*;
  * This class will determine all of the files for a given asset type, and load the asset data by creating the asset file format
  */
 public class AssetSourceResolver {
-    private List<AssetDataFile> inputs = Lists.newArrayList();
     private AssetTypeManager typeManager;
     //TODO: change this!!!!
     private static final String ASSETS_FOLDER = "Client/src/main/resources/engine";
-    private final Map<ResourceUrn, List<AssetDataFile>> unreadyAssets = Maps.newConcurrentMap();
-    private final Map<ResourceUrn, AssetFileFormat<?>> unreadyFormats = Maps.newConcurrentMap();
-    private final Map<ResourceUrn, AssetType> unreadyTypes = Maps.newConcurrentMap();
+    private final Set<ResourceUrn> resolvedAssets = Sets.newConcurrentHashSet();
+    private final Set<AssetMetaData> unresolvedAssets = Sets.newConcurrentHashSet();
 
     public AssetSourceResolver(AssetTypeManager typeManager) {
         this.typeManager = typeManager;
@@ -32,63 +30,134 @@ public class AssetSourceResolver {
 
     /**
      * Resolves the assets for the given type
+     *
+     * @return returns false if there's unresolved assets
      */
     @SneakyThrows
-    public void resolveAssets() {
+    public boolean resolveAssets() {
+        var allLoaded = true;
+
+        //We want to load all of the unloaded assets first
+        allLoaded = loadUnresolvedAssets();
+
         for (var assetClass : typeManager.getRegisteredTypes()) {
-            Optional<String> assetFolder = typeManager.getAssetFolder(assetClass);
-            Optional<AssetType<? extends Asset, ? extends AssetData>> assetType = typeManager.getAssetType(assetClass);
-            Optional<AbstractAssetFileFormat<? extends AssetData>> assetFormat = typeManager.getFormat(assetClass);
-            if (assetType.isPresent() && assetFormat.isPresent() && assetFolder.isPresent()) {
-                var type = assetType.get();
-                var format = assetFormat.get();
-                var folder = assetFolder.get();
-                var path = Paths.get(ASSETS_FOLDER, folder);
-                var files = path.toFile().listFiles();
-                if (files != null && files.length > 0)
-                    for (var file : Objects.requireNonNull(files)) {
-                        var filePath = Paths.get(file.toURI());
-                        if (format.getFileMatcher().matches(filePath)) {
-                            //TODO: remove hard coded engine!!!!!!
-                            var urn = new ResourceUrn("engine", format.getAssetName(file.getName()).toLowerCase());
-                            var assetData = Collections.singletonList(new AssetDataFile(filePath));
-                            parseAsset(urn, assetData, format, type);
-                        }
-                    }
-            } else {
-                throw new IOException("Failed to create asset type or asset file format!");
+            var metaList = getMetaData(assetClass);
+            if (metaList == null)
+                throw new IOException("Failed to load asset type '" + assetClass.getName() + "'.");
+            for (var meta : metaList) {
+                if (parseAsset(meta))
+                    allLoaded = false;
             }
         }
+        return allLoaded;
+    }
+
+    /**
+     * Attempts to load all of the unresolved asset types
+     *
+     * @return returns false if any failed to load
+     */
+    private boolean loadUnresolvedAssets() {
+        var allLoaded = true;
+        for (var meta : unresolvedAssets) {
+            if (!parseAsset(meta)) {
+                allLoaded = false;
+//                System.out.println("failed to parse: " + meta.urn);
+            }
+        }
+        return allLoaded;
+    }
+
+    /**
+     * Extracts the asset meta data from the files before loading
+     *
+     * @return returns the asset data
+     */
+    private List<AssetMetaData> getMetaData(Class<? extends Asset> assetClass) {
+        var metaList = new ArrayList<AssetMetaData>();
+        Optional<String> assetFolder = typeManager.getAssetFolder(assetClass);
+        Optional<AssetType<? extends Asset, ? extends AssetData>> assetType = typeManager.getAssetType(assetClass);
+        Optional<AbstractAssetFileFormat<? extends AssetData>> assetFormat = typeManager.getFormat(assetClass);
+        if (assetType.isPresent() && assetFormat.isPresent() && assetFolder.isPresent()) {
+            var type = assetType.get();
+            var format = assetFormat.get();
+            var folder = assetFolder.get();
+            var path = Paths.get(ASSETS_FOLDER, folder);
+            var files = path.toFile().listFiles();
+            if (files != null && files.length > 0)
+                for (var file : Objects.requireNonNull(files)) {
+                    var filePath = Paths.get(file.toURI());
+                    if (format.getFileMatcher().matches(filePath)) {
+                        var urn = new ResourceUrn("engine", folder, format.getAssetName(file.getName()).toLowerCase());
+                        var assetDataFiles = Collections.singletonList(new AssetDataFile(filePath));
+                        metaList.add(new AssetMetaData(assetDataFiles, format, type, urn));
+                    }
+                }
+            return metaList;
+        }
+        return null;
     }
 
     /**
      * Parses the asset, or put's it into the unready map, which will attempt to load the asset every time
      * a different asset is loaded. This allows for us to make shaders dependent upon other shader
      *
-     * @param urn        the urn to load
-     * @param assetFiles the asset file
-     * @param format     the asset format
+     * @param meta the meta to use to load the asset
+     * @return returns false if the asset was unresolved
      */
-    @SneakyThrows
-    private void parseAsset(ResourceUrn urn, List<AssetDataFile> assetFiles, AssetFileFormat<?> format, AssetType type) {
-        var data = format.load(urn, assetFiles);
-        if (data == null) {
-            unreadyAssets.put(urn, assetFiles);
-            unreadyFormats.put(urn, format);
-            unreadyTypes.put(urn, type);
-        } else {
-            type.loadAsset(urn, data);
-            for (var unreadyUrn : unreadyAssets.keySet()) {
-                var nextFormat = unreadyFormats.get(unreadyUrn);
-                data = nextFormat.load(unreadyUrn, unreadyAssets.get(unreadyUrn));
-                if (data != null) {
-                    var assetType = unreadyTypes.get(unreadyUrn);
-                    assetType.loadAsset(unreadyUrn, data);
-                    unreadyAssets.remove(unreadyUrn);
-                    unreadyTypes.remove(unreadyUrn);
-                    unreadyFormats.remove(unreadyUrn);
+    private boolean parseAsset(AssetMetaData meta) {
+        if (resolvedAssets.contains(meta.urn)) {
+            unresolvedAssets.remove(meta);
+            return true;
+        }
+        try {
+            var data = meta.format.load(meta.urn, meta.files);
+            if (data == null) {
+                unresolvedAssets.add(meta);
+            } else {
+                if (meta.type.loadAsset(meta.urn, data) != null) {
+                    unresolvedAssets.remove(meta);
+                    resolvedAssets.add(meta.urn);
+                    return true;
                 }
             }
+        } catch (IOException e) {
+            unresolvedAssets.add(meta);
+        }
+        return false;
+    }
+
+    private static class AssetMetaData {
+        public final List<AssetDataFile> files;
+        public final AssetFileFormat<?> format;
+        public final AssetType type;
+        public final ResourceUrn urn;
+
+        public AssetMetaData(List<AssetDataFile> files, AssetFileFormat<?> format, AssetType type, ResourceUrn urn) {
+            this.files = files;
+            this.format = format;
+            this.type = type;
+            this.urn = urn;
+        }
+
+        @Override
+        public boolean equals(Object object) {
+            if (this == object) return true;
+
+            if (object == null || getClass() != object.getClass()) return false;
+
+            AssetMetaData that = (AssetMetaData) object;
+
+            return new EqualsBuilder()
+                    .append(urn, that.urn)
+                    .isEquals();
+        }
+
+        @Override
+        public int hashCode() {
+            return new HashCodeBuilder(17, 37)
+                    .append(urn)
+                    .toHashCode();
         }
     }
 

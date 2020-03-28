@@ -297,6 +297,7 @@ public final class ResourceUrn implements Comparable<ResourceUrn> {
         }
         if (obj instanceof ResourceUrn) {
             ResourceUrn other = (ResourceUrn) obj;
+            System.out.println(this.toString() + " : " + other.toString());
             return Objects.equal(moduleName, other.moduleName) && Objects.equal(resourceName, other.resourceName)
                     && Objects.equal(fragmentName, other.fragmentName) && instance == other.instance;
         }

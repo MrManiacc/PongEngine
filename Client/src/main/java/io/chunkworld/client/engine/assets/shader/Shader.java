@@ -47,7 +47,6 @@ public class Shader extends Asset<ShaderData> {
      * @param data The data to load.
      */
     public void reload(ShaderData data) {
-        System.out.println(data.getName());
         if (data.isExecutable()) {
             data.compile();
             loadShader(data);
@@ -77,7 +76,6 @@ public class Shader extends Asset<ShaderData> {
             System.err.println("Failed to compile fragment shader");
             System.exit(-1);
         }
-        System.out.println(data.getVertex() + "\n" + data.getFragment());
         programID = GL20.glCreateProgram();
         GL20.glAttachShader(programID, vertexID);
         GL20.glAttachShader(programID, fragmentID);
@@ -85,7 +83,6 @@ public class Shader extends Asset<ShaderData> {
         GL20.glLinkProgram(programID);
         GL20.glValidateProgram(programID);
         data.getUniformMap().forEach(parseUniforms);
-        System.out.println(GL20.glGetShaderInfoLog(fragmentID, 500));
 
     }
 
@@ -94,7 +91,6 @@ public class Shader extends Asset<ShaderData> {
      */
     private BiConsumer<String, Bind> parseBinds = (s, bind) ->
     {
-        System.out.println("parsed attribute: " + bind.getAttribute() + ", " + bind.getName());
         GL20.glBindAttribLocation(programID, bind.getAttribute(), bind.getName());
     };
 
@@ -103,10 +99,8 @@ public class Shader extends Asset<ShaderData> {
      */
     private BiConsumer<String, Uniform> parseUniforms = (s, uniform) ->
     {
-            int pos = GL20.glGetUniformLocation(programID, uniform.getName());
-            System.out.println(pos);
 
-            this.uniforms.put(uniform.getName(), pos);
+            this.uniforms.put(uniform.getName(), GL20.glGetUniformLocation(programID, uniform.getName()));
     };
 
 

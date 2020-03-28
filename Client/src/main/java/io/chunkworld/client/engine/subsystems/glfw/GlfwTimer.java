@@ -8,7 +8,7 @@ import lombok.Getter;
 
 public class GlfwTimer implements EngineSubsystem {
     @Getter
-    private final String name = "Time";
+    private final String name = "time";
 
     /**
      * A simple initializer for the timer

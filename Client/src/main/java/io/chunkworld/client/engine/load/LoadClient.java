@@ -2,13 +2,14 @@ package io.chunkworld.client.engine.load;
 
 import io.chunkworld.api.core.modes.SingleStepLoadProcess;
 
-public class RegisterConfig extends SingleStepLoadProcess {
-    public RegisterConfig() {
-        super("Registering config...", 1);
+public class LoadClient extends SingleStepLoadProcess {
+
+    public LoadClient() {
+        super("Registering client...", 1);
     }
 
     /**
-     * Registers the config and the config manager
+     * Registers the client
      *
      * @return returns true
      */

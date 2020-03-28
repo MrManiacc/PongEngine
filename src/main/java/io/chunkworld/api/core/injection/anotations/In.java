@@ -1,4 +1,4 @@
-package io.chunkworld.api.core.annotations;
+package io.chunkworld.api.core.injection.anotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

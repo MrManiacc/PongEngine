@@ -11,6 +11,8 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.lwjgl.opengl.GL11.*;
+
 /**
  * This class represents a stored portion of vertices in opengl memory
  */
@@ -20,13 +22,33 @@ public class Vao {
     public final int id;
     private List<Vbo> dataVbos = new ArrayList<>();
     private Vbo indexVbo;
-    private int indexCount;
+    private int indexCount = -1;
     private int attributes;
     private int attribPtr = 0;
+    private int drawType;
+    //********** DRAW TYPE ***********
+    public static final int ELEMENT_TRIANGLES = 0;
+    public static final int ELEMENT_TRIANGLE_STRIPS = 1;
+    public static final int ELEMENT_TRIANGLE_FAN = 2;
+    public static final int ARRAYS_TRIANGLE_STRIPS = 3;
+    public static final int ARRAYS_TRIANGLES = 4;
+    public static final int ARRAYS_TRIANGLE_FAN = 5;
 
-    private Vao(int id, int attributes) {
+    private Vao(int id, int attributes, int drawType) {
         this.id = id;
         this.attributes = attributes;
+        this.drawType = drawType;
+    }
+
+    /**
+     * this creates a new opengl vao instance
+     *
+     * @param attributes the number of attributes to bind
+     * @return new vao instance
+     */
+    public static Vao create(int attributes, int drawType) {
+        int id = GL30.glGenVertexArrays();
+        return new Vao(id, attributes, drawType);
     }
 
     /**
@@ -37,7 +59,7 @@ public class Vao {
      */
     public static Vao create(int attributes) {
         int id = GL30.glGenVertexArrays();
-        return new Vao(id, attributes);
+        return new Vao(id, attributes, ELEMENT_TRIANGLES);
     }
 
     public void setIndexCount(int count) {
@@ -57,6 +79,34 @@ public class Vao {
         for (int i = 0; i < attributes; i++) {
             GL20.glEnableVertexAttribArray(i);
         }
+    }
+
+    /**
+     * Draw's the vao directly
+     */
+    public void draw() {
+        bind();
+        switch (drawType) {
+            case ELEMENT_TRIANGLES:
+                glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
+                break;
+            case ELEMENT_TRIANGLE_STRIPS:
+                glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
+                break;
+            case ELEMENT_TRIANGLE_FAN:
+                glDrawElements(GL_TRIANGLE_FAN, indexCount, GL_UNSIGNED_INT, 0);
+                break;
+            case ARRAYS_TRIANGLES:
+                glDrawArrays(GL_TRIANGLES, 0, indexCount);
+                break;
+            case ARRAYS_TRIANGLE_STRIPS:
+                glDrawArrays(GL_TRIANGLE_STRIP, 0, indexCount);
+                break;
+            case ARRAYS_TRIANGLE_FAN:
+                glDrawArrays(GL_TRIANGLE_FAN, 0, indexCount);
+                break;
+        }
+        unbind();
     }
 
     /**
@@ -98,6 +148,8 @@ public class Vao {
      */
     public void createAttribute(float[] data, int attrSize) {
         Vbo dataVbo = Vbo.create(GL15.GL_ARRAY_BUFFER);
+        if (attribPtr == 0 && drawType > ELEMENT_TRIANGLE_FAN)
+            this.indexCount = data.length / attrSize;
         dataVbo.bind();
         dataVbo.storeData(data);
         GL20.glVertexAttribPointer(attribPtr++, attrSize, GL11.GL_FLOAT, false, 0, 0);
@@ -113,6 +165,8 @@ public class Vao {
      */
     public void createAttribute(FloatBuffer data, int attrSize) {
         Vbo dataVbo = Vbo.create(GL15.GL_ARRAY_BUFFER);
+        if (attribPtr == 0 && drawType > ELEMENT_TRIANGLE_FAN)
+            this.indexCount = data.limit() / attrSize;
         dataVbo.bind();
         dataVbo.storeData(data);
         GL20.glVertexAttribPointer(attribPtr++, attrSize, GL11.GL_FLOAT, false, 0, 0);

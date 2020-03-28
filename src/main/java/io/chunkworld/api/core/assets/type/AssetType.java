@@ -74,7 +74,7 @@ public final class AssetType<T extends Asset<U>, U extends AssetData> {
     /**
      * Loads an asset with the given urn and data. If the asset already exists, it is reloaded with the data instead
      *
-     * @param urn  The urn of the asset
+     * @param urn  The urn of the asset        Preconditions.checkNotNull(urn);
      * @param data The data to load the asset with
      * @return The loaded (or reloaded) asset
      */
@@ -129,10 +129,10 @@ public final class AssetType<T extends Asset<U>, U extends AssetData> {
     /**
      * Notifies the asset type when an asset is created
      *
-     * @param asset The asset that was created
+     * @param baseAsset The asset that was created
      */
-    public synchronized void registerAsset(Asset<U> asset) {
-        loadedAssets.put(asset.getUrn(), assetClass.cast(asset));
+    public synchronized void registerAsset(Asset<U> baseAsset) {
+        loadedAssets.put(baseAsset.getUrn(), assetClass.cast(baseAsset));
     }
 
 

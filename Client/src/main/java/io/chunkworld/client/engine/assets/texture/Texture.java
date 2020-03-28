@@ -4,8 +4,6 @@ import io.chunkworld.api.core.assets.Asset;
 import io.chunkworld.api.core.assets.type.AssetType;
 import io.chunkworld.api.core.assets.urn.ResourceUrn;
 
-import java.nio.ByteBuffer;
-
 import static org.lwjgl.opengl.GL11.*;
 
 public class Texture extends Asset<TextureData> {
@@ -48,11 +46,9 @@ public class Texture extends Asset<TextureData> {
         this.id = glGenTextures();
         this.target = data.getTarget();
         bind();
-        for (var name : data.getTextureParameters().keySet()) {
+        for (var name : data.getTextureParameters().keySet())
             for (var value : data.getTextureParameters().get(name))
                 glTexParameteri(target, name, value);
-        }
-
         glTexImage2D(GL_TEXTURE_2D, 0, data.getInternalFormat(), data.getWidth(), data.getHeight(), 0, data.getFormat(), GL_UNSIGNED_BYTE, data.getData());
         unbind();
     }
