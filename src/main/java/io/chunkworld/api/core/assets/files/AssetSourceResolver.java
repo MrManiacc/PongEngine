@@ -45,7 +45,7 @@ public class AssetSourceResolver {
             if (metaList == null)
                 throw new IOException("Failed to load asset type '" + assetClass.getName() + "'.");
             for (var meta : metaList) {
-                if (parseAsset(meta))
+                if (!parseAsset(meta))
                     allLoaded = false;
             }
         }

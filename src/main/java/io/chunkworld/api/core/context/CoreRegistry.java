@@ -22,6 +22,26 @@ public final class CoreRegistry {
         return object;
     }
 
+    /**
+     * Registers an object. These objects will be removed when CoreRegistry.clear() is called (typically when game state changes)
+     *
+     * @param object The system itself
+     */
+    public static void put(Object object) {
+        if (context == null) {
+            return;
+        }
+        context.put(object);
+    }
+
+    /**
+     * Checks to see if the class is present
+     *
+     * @return returns true if present
+     */
+    public static boolean has(Class<?> type) {
+        return get(type) != null;
+    }
 
 
     /**

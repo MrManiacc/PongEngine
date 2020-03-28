@@ -17,6 +17,8 @@ public class GlfwInputSubsystem implements EngineSubsystem {
     private GameEngine engine;
     private GlfwInput input;
 
+    @Getter private boolean loaded = false;
+
 
     @Override
     public void initialise() {
@@ -24,6 +26,7 @@ public class GlfwInputSubsystem implements EngineSubsystem {
         //TODO: do some kind of check to confirm the window is glfw window
         input.registerCallbacks((GlfwWindow) window);
         engine.getRootContext().put(Input.class, input);
+        loaded = true;
     }
 
     /**

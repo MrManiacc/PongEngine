@@ -26,7 +26,6 @@ public class Shader extends Asset<ShaderData> {
     private int programID, vertexID, fragmentID;
     @Getter
     private final Map<String, Integer> uniforms = Maps.newHashMap();
-    private final Map<String, int[]> samplers = Maps.newHashMap();
     private final FloatBuffer matrixBuffer;
 
     /**
@@ -83,7 +82,6 @@ public class Shader extends Asset<ShaderData> {
         GL20.glLinkProgram(programID);
         GL20.glValidateProgram(programID);
         data.getUniformMap().forEach(parseUniforms);
-
     }
 
     /**
@@ -99,8 +97,7 @@ public class Shader extends Asset<ShaderData> {
      */
     private BiConsumer<String, Uniform> parseUniforms = (s, uniform) ->
     {
-
-            this.uniforms.put(uniform.getName(), GL20.glGetUniformLocation(programID, uniform.getName()));
+        this.uniforms.put(uniform.getName(), GL20.glGetUniformLocation(programID, uniform.getName()));
     };
 
 

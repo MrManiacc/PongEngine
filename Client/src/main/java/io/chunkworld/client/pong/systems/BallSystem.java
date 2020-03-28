@@ -1,11 +1,15 @@
 package io.chunkworld.client.pong.systems;
 
+import com.badlogic.gdx.math.Vector2;
 import com.google.common.eventbus.Subscribe;
 import io.chunkworld.api.core.injection.anotations.EventSubscriber;
+import io.chunkworld.api.core.injection.anotations.In;
 import io.chunkworld.api.core.injection.anotations.Single;
 import io.chunkworld.api.core.ecs.entity.ref.EntityRef;
 import io.chunkworld.api.core.ecs.entity.system.EntitySystem;
 import io.chunkworld.api.core.time.EngineTime;
+import io.chunkworld.client.pong.components.PhysicsComponent;
+import io.chunkworld.client.pong.events.PostSolveContactEvent;
 import io.chunkworld.client.pong.events.PreSolveContactEvent;
 
 /**
@@ -13,7 +17,9 @@ import io.chunkworld.client.pong.events.PreSolveContactEvent;
  */
 @EventSubscriber
 public class BallSystem extends EntitySystem {
-    @Single("engine:entities#ball") private EntityRef ball;
+    @Single("engine:entities#ball") private EntityRef ballEntity;
+    private static final float MAX_VELOCITY = 30;
+    @In private ScoreSystem scoreSystem;
 
     /**
      * Process the system
@@ -22,19 +28,21 @@ public class BallSystem extends EntitySystem {
      */
     @Override
     protected void process(EngineTime time) {
-
+        ballEntity.ifPresent(PhysicsComponent.class, physics -> {
+            var body = physics.body;
+            if (!scoreSystem.isGameOver()) {
+                if (body.getLinearVelocity().x >= MAX_VELOCITY)
+                    body.setLinearVelocity(new Vector2(MAX_VELOCITY, body.getLinearVelocity().y));
+                if (body.getLinearVelocity().x <= -MAX_VELOCITY)
+                    body.setLinearVelocity(new Vector2(-MAX_VELOCITY, body.getLinearVelocity().y));
+                if (body.getLinearVelocity().y >= MAX_VELOCITY)
+                    body.setLinearVelocity(new Vector2(body.getLinearVelocity().x, MAX_VELOCITY));
+                if (body.getLinearVelocity().y <= -MAX_VELOCITY)
+                    body.setLinearVelocity(new Vector2(body.getLinearVelocity().x, -MAX_VELOCITY));
+            } else {
+                body.setLinearVelocity(new Vector2(0, 0));
+            }
+        });
     }
 
-    /**
-     * Called when a contact is made between two entities
-     *
-     * @param e contact event
-     */
-    @Subscribe
-    public void onContact(PreSolveContactEvent e) {
-        //A contact has been made between the ball
-        if (e.getEntityA().equals(ball) || e.getEntityB().equals(ball)) {
-            System.out.println("contact normal: " + e.getOldManifold().localNormal);
-        }
-    }
 }

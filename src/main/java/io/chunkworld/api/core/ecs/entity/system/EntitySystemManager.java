@@ -2,6 +2,7 @@ package io.chunkworld.api.core.ecs.entity.system;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import io.chunkworld.api.core.context.CoreRegistry;
 import io.chunkworld.api.core.injection.Injector;
 
 import java.util.Collections;
@@ -63,11 +64,19 @@ public class EntitySystemManager {
     }
 
     /**
+     * Finish processing of all systems
+     */
+    public void postProcess() {
+        systems.forEach(EntitySystem::postProcess);
+    }
+
+    /**
      * Initialize all of the systems
      */
     public void initialize() {
         systems.forEach(system -> {
             if (!system.isInitialized()) {
+                CoreRegistry.put(system);
                 Injector.ALL.inject(system);
                 system.initialize();
             }

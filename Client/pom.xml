@@ -14,7 +14,7 @@
 
 
     <properties>
-        <lwjgl.version>3.2.4-SNAPSHOT</lwjgl.version>
+        <lwjgl.version>3.2.3</lwjgl.version>
         <joml.version>1.9.22</joml.version>
         <lwjgl.natives>natives-macos</lwjgl.natives>
     </properties>
@@ -45,6 +45,27 @@
     </dependencyManagement>
 
     <dependencies>
+        <dependency>
+            <groupId>org.lwjgl</groupId>
+            <artifactId>lwjgl-nanovg</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.lwjgl</groupId>
+            <artifactId>lwjgl-nanovg</artifactId>
+            <classifier>${lwjgl.natives}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>com.badlogicgames.gdx</groupId>
+            <artifactId>gdx-box2d</artifactId>
+            <version>1.9.10</version>
+        </dependency>
+        <dependency>
+            <groupId>com.badlogicgames.gdx</groupId>
+            <artifactId>gdx-box2d-platform</artifactId>
+            <classifier>natives-desktop</classifier>
+            <version>1.9.10</version>
+            <scope>compile</scope>
+        </dependency>
         <dependency>
             <groupId>io.chunkworld</groupId>
             <artifactId>ChunkWorld-API</artifactId>

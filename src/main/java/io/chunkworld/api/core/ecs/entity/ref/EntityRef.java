@@ -122,6 +122,22 @@ public abstract class EntityRef {
         }
     }
 
+    /**
+     * Gets an optional of the component, which is useful for inline checking/consumers etc
+     *
+     * @param componentClass
+     * @param <T>
+     * @return
+     */
+    public <T extends Component> void ifPresentOrElse(Class<T> componentClass, Consumer<T> consumer, Runnable runnable) {
+        if (isExists()) {
+            var component = getComponent(componentClass);
+            if (component != null)
+                consumer.accept(component);
+            else
+                runnable.run();
+        }
+    }
 
     /**
      * Checks to see if this entity has the given component

@@ -138,10 +138,9 @@ public class ShaderParser {
     private static List<Bind> getGlobalBinds(ResourceUrn urn) {
         List<Bind> output = Lists.newArrayList();
         globalBinds.forEach((resourceUrn, bind) -> {
-            if (resourceUrn.equals(urn))
+            if (resourceUrn.equals(urn) || resourceUrn.isOfType(urn)) {
                 output.add(bind);
-            else if (resourceUrn.isOfType(urn))
-                output.add(bind);
+            }
         });
         Collections.sort(output);
         return output;
@@ -174,9 +173,7 @@ public class ShaderParser {
     private static List<Custom> getGlobalCustoms(ResourceUrn urn) {
         List<Custom> output = Lists.newArrayList();
         globalCustoms.forEach((resourceUrn, custom) -> {
-//            System.out.println("in " + urn.toString() + " out " + resourceUrn);
             if (urn.equals(resourceUrn)) {
-                System.out.println("HERE");
                 output.add(custom);
             }
         });
@@ -196,13 +193,13 @@ public class ShaderParser {
         data.getImportsMap().forEach((urn, imports) -> {
             imports.forEach(anImport -> {
                 var _import = new ResourceUrn(anImport.name);
-//                System.out.println(_import.getResourceName() + " : " + _import.getModuleName());
                 switch (anImport.getDefinition()) {
                     case "BINDS":
                         var containsBind = new AtomicBoolean(false);
                         globalBinds.forEach((resourceUrn, bind) -> {
                             if (resourceUrn.isOfType(_import))
                                 containsBind.set(true);
+
                         });
                         if (!containsBind.get())
                             present.set(false);
@@ -218,6 +215,7 @@ public class ShaderParser {
                         break;
                     default:
                         var custom = new ResourceUrn(_import, anImport.getDefinition());
+//                        System.out.println(custom);
                         if (!globalCustoms.containsKey(custom))
                             present.set(false);
                         break;

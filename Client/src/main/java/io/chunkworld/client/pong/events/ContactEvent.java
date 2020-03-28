@@ -1,7 +1,7 @@
 package io.chunkworld.client.pong.events;
 
+import com.badlogic.gdx.physics.box2d.Contact;
 import io.chunkworld.api.core.ecs.entity.ref.EntityRef;
-import org.jbox2d.dynamics.contacts.Contact;
 
 /**
  * A generic contact event posted by the pong physics system

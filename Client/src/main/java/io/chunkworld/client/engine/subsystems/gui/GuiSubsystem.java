@@ -18,7 +18,12 @@ public class GuiSubsystem implements EngineSubsystem {
     @In private Input input;
     @In private AssetManager assetManager;
     @In private GameEngine engine;
+    @Getter private boolean loaded = false;
 
+    @Override
+    public void initialise() {
+        loaded = true;
+    }
 
     /**
      * Update the gui menu

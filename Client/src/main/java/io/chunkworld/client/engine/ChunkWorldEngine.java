@@ -2,6 +2,7 @@ package io.chunkworld.client.engine;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
+import com.google.common.eventbus.Subscribe;
 import io.chunkworld.api.bus.Bus;
 import io.chunkworld.api.core.injection.Injector;
 import io.chunkworld.api.core.injection.anotations.In;
@@ -19,6 +20,7 @@ import io.chunkworld.api.core.status.EngineStatusUpdatedEvent;
 import io.chunkworld.api.core.status.StandardGameStatus;
 import io.chunkworld.api.core.systems.EngineSubsystem;
 import io.chunkworld.api.core.time.EngineTime;
+import io.chunkworld.client.pong.events.QuitGameEvent;
 import lombok.Getter;
 
 import java.util.Deque;
@@ -46,6 +48,7 @@ public class ChunkWorldEngine implements GameEngine {
         CoreRegistry.setContext(rootContext);
         this.allSubsystems = Queues.newArrayDeque();
         this.registeredSubsystems = Maps.newConcurrentMap();
+        Bus.Logic.register(this);
     }
 
     /**
@@ -95,25 +98,22 @@ public class ChunkWorldEngine implements GameEngine {
      */
     private void initialize(GameState initialState) {
         rootContext.put(GameEngine.class, this);
-
         preInitSubsystems();
-        //Managers should be created before the subsystems are injected
-        initManagers();
-
-        //Init the loadingState before initializing the sub systems
         changeState(initialState);
-
-        //Anything injectable should be initialized inside of the pre init so it can be injected and used in main init
         injectSubsystems();
-
         initSubsystems();
-
-
         postInitSubsystems();
-
-
     }
 
+    /**
+     * Called when the player wants to quit the game
+     *
+     * @param e
+     */
+    @Subscribe
+    public void onQuitGame(QuitGameEvent e) {
+        shutdownRequested = true;
+    }
 
     /**
      * Step the engine a single time
@@ -141,15 +141,17 @@ public class ChunkWorldEngine implements GameEngine {
         for (EngineSubsystem subsystem : allSubsystems) {
             subsystem.preUpdate(state);
         }
+        //Process the entity systems
+        if (systemManager != null)
+            systemManager.process();
 
         while (updateCycles.hasNext()) {
             float updateDelta = updateCycles.next(); // gameTime gets updated here!
             state.update(updateDelta);
         }
-
         //Process the entity systems
         if (systemManager != null)
-            systemManager.process();
+            systemManager.postProcess();
 
         for (EngineSubsystem subsystem : allSubsystems)
             subsystem.postUpdate(state);
@@ -179,16 +181,9 @@ public class ChunkWorldEngine implements GameEngine {
 
 
     /**
-     * Initialize the managers
-     */
-    private void initManagers() {
-    }
-
-    /**
      * This class will inject all of the variables inside the root context
      */
     private void injectSubsystems() {
-//        InjectionHelper.injectGenerics(this, rootContext);
         Injector.GENERICS.inject(this, true);
         for (EngineSubsystem subsystem : allSubsystems) {
             InjectionHelper.share(subsystem);
@@ -257,7 +252,6 @@ public class ChunkWorldEngine implements GameEngine {
     private void changeStatus(EngineStatus newStatus) {
         Bus.Logic.post(new EngineStatusUpdatedEvent(this.status, newStatus));
         status = newStatus;
-        //System.out.println("Updated status: " + newStatus.getDescription());
     }
 
     /**

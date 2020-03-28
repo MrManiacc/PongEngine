@@ -1,12 +1,8 @@
 package io.chunkworld.client.pong.components;
 
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.*;
 import io.chunkworld.api.core.ecs.component.Component;
-import org.jbox2d.collision.shapes.CircleShape;
-import org.jbox2d.collision.shapes.PolygonShape;
-import org.jbox2d.collision.shapes.Shape;
-import org.jbox2d.dynamics.Body;
-import org.jbox2d.dynamics.BodyDef;
-import org.jbox2d.dynamics.Fixture;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 
@@ -31,8 +27,9 @@ public class PhysicsComponent implements Component {
             this.scale = new Vector2f(shape.getRadius());
         } else if (shape instanceof PolygonShape) {
             var poly = (PolygonShape) shape;
-            var rawScale = poly.getVertex(2);
-            this.scale = new Vector2f(rawScale.x, rawScale.y);
+            Vector2 vert = new Vector2();
+            poly.getVertex(2, vert);
+            this.scale = new Vector2f(vert.x, vert.y);
         }
     }
 

@@ -9,6 +9,7 @@ import lombok.Getter;
 public class GlfwTimer implements EngineSubsystem {
     @Getter
     private final String name = "time";
+    @Getter private boolean loaded = false;
 
     /**
      * A simple initializer for the timer
@@ -18,5 +19,10 @@ public class GlfwTimer implements EngineSubsystem {
     @Override
     public void preInitialise(Context rootContext) {
         rootContext.put(EngineTime.class, new GenericTime());
+    }
+
+    @Override
+    public void initialise() {
+        loaded = true;
     }
 }

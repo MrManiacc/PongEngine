@@ -377,7 +377,7 @@ public class ShaderData implements AssetData {
     @Override
     public String toString() {
         var builder = new StringBuilder();
-        builder.append(StringUtils.capitalize(name)).append("Shader").append("{").append("\n");
+        builder.append(StringUtils.capitalize(name)).append(" Shader").append("{").append("\n");
         if (!customs.isEmpty()) {
             builder.append("\tCustoms{").append("\n");
             customs.forEach(custom -> {

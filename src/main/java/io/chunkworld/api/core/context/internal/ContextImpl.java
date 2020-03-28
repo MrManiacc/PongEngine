@@ -43,4 +43,9 @@ public class ContextImpl implements Context {
         map.put(type, object);
     }
 
+    @Override
+    public void put(Object object) {
+        map.put(object.getClass(), object);
+    }
+
 }

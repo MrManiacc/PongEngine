@@ -1,6 +1,5 @@
 package io.chunkworld.client.pong.exceptions;
 
-import org.jbox2d.dynamics.contacts.Contact;
 
 /**
  * Thrown when the userdata is incorrect on a contact event

@@ -55,11 +55,5 @@ public interface EngineSubsystem {
     default void shutdown() {
     }
 
-    /**
-     * Register the component systems
-     *
-     * @param componentSystemManager the component manager
-     */
-    default void registerComponentSystem(ComponentSystemManager componentSystemManager) {
-    }
+    boolean isLoaded();
 }

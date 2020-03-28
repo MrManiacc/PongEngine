@@ -25,4 +25,8 @@ public interface Context {
      */
     <T, U extends T> void put(Class<T> type, U object);
 
+    /**
+     * Makes the object known in this context to be the object to work with for the given type.
+     */
+    void put(Object object);
 }

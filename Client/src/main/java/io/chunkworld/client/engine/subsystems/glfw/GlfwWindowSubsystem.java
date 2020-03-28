@@ -15,6 +15,7 @@ public class GlfwWindowSubsystem implements EngineSubsystem {
     private IWindow window;
     @In private GameEngine engine;
     @In private GLUtils glUtils;
+    @Getter private boolean loaded = false;
 
     @Override
     public void preInitialise(Context rootContext) {
@@ -22,6 +23,11 @@ public class GlfwWindowSubsystem implements EngineSubsystem {
         this.window = new GlfwWindow("ChunkWorld", 1350, 900, false, true, false);
         rootContext.put(IWindow.class, window);
         window.init();
+    }
+
+    @Override
+    public void initialise() {
+        loaded = true;
     }
 
     /**

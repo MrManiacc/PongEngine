@@ -6,6 +6,7 @@ import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryStack;
 
+import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 import static org.lwjgl.glfw.Callbacks.*;
@@ -20,7 +21,7 @@ public class GlfwWindow implements IWindow {
     @Getter
     private String title;
     @Getter
-    private int width, height;
+    private float width, height;
     @Getter
     private boolean fullscreen;
     @Getter
@@ -29,6 +30,8 @@ public class GlfwWindow implements IWindow {
     private boolean resizable;
     @Getter
     private long handle;
+    @Getter
+    private float contentScale;
 
     public GlfwWindow(String title, int width, int height, boolean fullscreen, boolean vsync, boolean resizable) {
         this.title = title;
@@ -64,9 +67,12 @@ public class GlfwWindow implements IWindow {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-        handle = glfwCreateWindow(width, height, title, 0, 0);
+        handle = glfwCreateWindow((int) width, (int) height, title, 0, 0);
         if (handle == 0)
             throw new RuntimeException("Failed to create the GLFW window");
+        glfwSetWindowContentScaleCallback(handle, (handle, xscale, yscale) -> {
+            contentScale = Math.max(xscale, yscale);
+        });
     }
 
     /**
@@ -76,7 +82,8 @@ public class GlfwWindow implements IWindow {
         try (MemoryStack stack = stackPush()) {
             IntBuffer pWidth = stack.mallocInt(1); // int*
             IntBuffer pHeight = stack.mallocInt(1); // int*
-
+            FloatBuffer sx = stack.mallocFloat(1);
+            FloatBuffer sy = stack.mallocFloat(1);
             // Get the window size passed to glfwCreateWindow
             glfwGetWindowSize(handle, pWidth, pHeight);
 
@@ -88,6 +95,8 @@ public class GlfwWindow implements IWindow {
                     (vidmode.width() - pWidth.get(0)) / 2,
                     (vidmode.height() - pHeight.get(0)) / 2
             );
+            glfwGetWindowContentScale(handle, sx, sy);
+            contentScale = Math.max(sx.get(0), sy.get(0));
         }
     }
 
@@ -176,6 +185,8 @@ public class GlfwWindow implements IWindow {
      * Dispose of the window
      */
     public void dispose() {
+        glfwSetWindowShouldClose(handle, true);
+
         glfwFreeCallbacks(handle);
         glfwDestroyWindow(handle);
 

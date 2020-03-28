@@ -8,9 +8,11 @@ package io.chunkworld.api.core.window;
 public interface IWindow {
     String getTitle();
 
-    int getWidth();
+    float getWidth();
 
-    int getHeight();
+    float getHeight();
+
+    float getContentScale();
 
     boolean isFullscreen();
 

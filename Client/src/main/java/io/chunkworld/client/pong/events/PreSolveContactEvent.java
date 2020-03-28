@@ -1,11 +1,11 @@
 package io.chunkworld.client.pong.events;
 
+import com.badlogic.gdx.physics.box2d.Contact;
+import com.badlogic.gdx.physics.box2d.Manifold;
 import io.chunkworld.api.core.ecs.entity.ref.EntityRef;
 import io.chunkworld.client.pong.exceptions.InvalidContactException;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import org.jbox2d.collision.Manifold;
-import org.jbox2d.dynamics.contacts.Contact;
 
 public class PreSolveContactEvent implements ContactEvent {
     @Getter private EntityRef entityA;

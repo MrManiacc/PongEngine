@@ -46,6 +46,7 @@ public class StateLoading implements GameState {
         //Initialize the client here
         pushLoadProcess(new LoadConfiguration());
         pushLoadProcess(new LoadAssets());
+        pushLoadProcess(new LoadNanovg());
         pushLoadProcess(new LoadClient());
         pushLoadProcess(new LoadEntitySystems());
         pushLoadProcess(new LoadSystems());
@@ -81,9 +82,7 @@ public class StateLoading implements GameState {
         if (current == null) {
             ((ChunkWorldEngine) engine).initEntitySystems();
             engine.changeState(new StateInGame());
-        } else {
-            float progressValue = (progress + current.getExpectedCost() * current.getProgress()) / maxProgress;
-//            System.out.println(current.getMessage() + ": (" + progressValue + "/" + maxProgress + ")");
+            ((ChunkWorldEngine) engine).getAllSubsystems().forEach(Injector.GENERICS::inject);
         }
     }
 

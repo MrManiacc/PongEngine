@@ -1,5 +1,6 @@
 package io.chunkworld.client.pong.systems;
 
+import io.chunkworld.api.core.ecs.component.SingleComponent;
 import io.chunkworld.api.core.injection.anotations.In;
 import io.chunkworld.api.core.assets.type.AssetManager;
 import io.chunkworld.api.core.ecs.entity.ref.EntityRef;
@@ -28,14 +29,7 @@ public class PongRendererSystem extends EntitySystem {
     @In private GLUtils glUtils;
     @Resource("engine:shaders#gui")
     private Shader shader;
-
-    /**
-     * initialize the assets
-     */
-    @Override
-    public void initialize() {
-//        shader = assetManager.getAsset("engine:shaders#gui", Shader.class).get();
-    }
+    @In private ScoreSystem scoreSystem;
 
     /**
      * Renders the paddles
@@ -54,7 +48,13 @@ public class PongRendererSystem extends EntitySystem {
             var texture = assetManager.getAsset(materialRef.textureUrn, Texture.class).get();
             texture.bind();
             shader.loadMat4("modelMatrix", physics.getModelMatrix());
-            shape.draw();
+            entity.ifPresentOrElse(SingleComponent.class, singleComponent -> {
+                if (singleComponent.urn.equals("engine:entities#ball")) {
+                    if (!scoreSystem.isGameOver())
+                        shape.draw();
+                } else
+                    shape.draw();
+            }, shape::draw);
             texture.unbind();
         });
         glUtils.alphaBlending(false);

@@ -5,6 +5,7 @@ import io.chunkworld.client.engine.ChunkWorldEngine;
 import io.chunkworld.client.engine.subsystems.glfw.GlfwInputSubsystem;
 import io.chunkworld.client.engine.subsystems.glfw.GlfwTimer;
 import io.chunkworld.client.engine.subsystems.glfw.GlfwWindowSubsystem;
+import io.chunkworld.client.pong.systems.PongPhysicsSubsystem;
 import io.chunkworld.client.states.StateLoading;
 
 public class ChunkWorld {
@@ -24,5 +25,6 @@ public class ChunkWorld {
         builder.add(new GlfwInputSubsystem());
         builder.add(new GlfwWindowSubsystem());
         builder.add(new GlfwTimer());
+        builder.add(new PongPhysicsSubsystem());
     }
 }

@@ -8,8 +8,6 @@ import io.chunkworld.api.core.modes.SingleStepLoadProcess;
 import io.chunkworld.client.engine.assets.model.Vao;
 import io.chunkworld.client.engine.utils.GLUtils;
 import io.chunkworld.client.engine.utils.ShapeUtils;
-import org.jbox2d.common.Vec2;
-import org.jbox2d.dynamics.World;
 
 import java.util.Objects;
 
@@ -28,8 +26,6 @@ public class LoadConfiguration extends SingleStepLoadProcess {
         addDefaultShapes(Objects.requireNonNull(CoreRegistry.put(ShapeUtils.class, new ShapeUtils())));
         CoreRegistry.put(EntityManager.class, new EntityManager());
         CoreRegistry.put(EntitySystemManager.class, new EntitySystemManager());
-        //Create the physics world with no gravity
-        CoreRegistry.put(World.class, new World(new Vec2(0, 0)));
         return true;
     }
 
